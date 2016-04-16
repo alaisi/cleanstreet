@@ -3,9 +3,6 @@
             [re-frame.core :refer [subscribe dispatch]]
             [clojure.data :as data]))
 
-(defn- initial-render [& _]
-  [:div {:style {:height "600px"}}])
-
 (defn- build-map [component]
   (let [map-canvas (reagent/dom-node component)
         map-options (clj->js {:zoom 16
@@ -100,4 +97,5 @@
   (let [paths (subscribe [:paths])
         editing (subscribe [:is-new-path])
         new-path (subscribe [:new-path])]
-    [google-map-wrapper @paths @editing @new-path]))
+    (fn []
+      [google-map-wrapper @paths @editing @new-path])))
