@@ -33,6 +33,7 @@
                          (first (:nodes path))))
     old-marker
     (let [marker (google.maps.Marker. (clj->js {:map gmap
+                                                :icon "image/Edit-clear.svg"
                                                 :position (first (:nodes path))
                                                 :title (:name path)}))
           show-info (fn []
@@ -58,7 +59,6 @@
 
 (defn- update-paths [paths old-paths doms gmap]
   (let [[new removed _] (data/diff paths old-paths)
-        _ (println (count new) (count removed))
         _ (doseq [[id _] removed]
             (clear-dom (get doms id)))
         doms (apply dissoc (concat [doms] (map first removed)))
@@ -74,24 +74,24 @@
       dom
       (update-dom path gmap dom))))
 
-(defn google-map-wrapper [paths editing new-path]
-  (let [state (atom {})
-        did-update (fn [component [_ old-paths last-edit]]
-                     (let [[_ paths editing new-path] (reagent/argv component)]
-                       (swap!
-                        state
-                        (fn [{gmap :map doms :doms dom :new-dom :as local}]
-                          (merge local
-                                 {:new-dom
-                                  (update-new-path new-path last-edit dom gmap)}
-                                 {:doms
-                                  (update-paths paths old-paths doms gmap)})))))
-        did-mount (fn [component]
-                    (swap! state assoc :map (build-map component)))]
+(defn- map-did-update [component [_ old-paths last-edit]]
+  (let [[_ paths editing new-path] (reagent/argv component)]
+    (swap! state
+           (fn [{gmap :map doms :doms dom :new-dom :as local}]
+             (merge local
+                    {:new-dom
+                     (update-new-path new-path last-edit dom gmap)}
+                    {:doms
+                     (update-paths paths old-paths doms gmap)})))))
+
+(defn- google-map-wrapper []
+  (let [state (atom {})]
     (reagent/create-class {:reagent-render (fn []
                                              [:div {:style {:height "600px"}}])
-                           :component-did-mount did-mount
-                           :component-did-update did-update})))
+                           :component-did-mount (fn [component]
+                                                  (swap! state assoc
+                                                         :map (build-map component)))
+                           :component-did-update  map-did-update})))
 
 (defn google-map []
   (let [paths (subscribe [:paths])
