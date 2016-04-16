@@ -11,28 +11,24 @@
         map-options (clj->js {:zoom 16
                               :mapTypeId google.maps.MapTypeId.HYBRID
                               :center {:lat 60.47431090908283
-                                       :lng 25.376529693603516 }})]
-    (google.maps.Map. map-canvas map-options)))
-
-(defn- on-mount [state editing component]
-  (let [map (build-map component)]
-    (swap! state assoc :map map)
+                                       :lng 25.376529693603516 }})
+        map (google.maps.Map. map-canvas map-options)]
     (.addListener map "click"
-                  #(when @editing
-                     (dispatch [:new-path-marker
-                                (js->clj (-> % .-latLng .toJSON))])))))
+                  #(dispatch [:new-path-marker
+                              (js->clj (-> % .-latLng .toJSON))]))
+    map))
 
 (defn- build-path-renderer [{color :color} gmap]
-  (doto (google.maps.DirectionsRenderer. (clj->js {:map gmap}))
-    (.setOptions (clj->js {:preserveViewport true
-                           :suppressMarkers true
-                           :polylineOptions {:strokeColor color}}))))
+  (google.maps.DirectionsRenderer. (clj->js {:map gmap
+                                             :preserveViewport true
+                                             :suppressMarkers true
+                                             :polylineOptions {:strokeColor color}})))
 
 (defn- update-path [{route :route :as path} gmap old-renderer]
   (let [renderer (or old-renderer
                      (build-path-renderer path gmap))]
     (if route
-      (.setDirections renderer (js/JSON.parse route)))
+      (.setDirections renderer (clj->js route)))
     renderer))
 
 (defn- update-marker [path gmap old-marker]
@@ -54,53 +50,53 @@
 
 (defn- clear-dom [dom]
   (doseq [val (vals dom)]
-    (.setMap val nil)))
+    (if val (.setMap val nil)))
+  {:renderer nil :marker nil})
 
 (defn- update-dom [path gmap {:keys [renderer marker]}]
-  (println "update-dom " path)
   (let [marker (update-marker path gmap marker)
         renderer (update-path path gmap renderer)]
     {:renderer renderer
      :marker marker}))
 
-(defn- update-paths [paths state]
-  (let [{gmap :map old-paths :paths doms :doms} @state
-        [new removed _] (data/diff paths old-paths)
+(defn- update-paths [paths old-paths doms gmap]
+  (let [[new removed _] (data/diff paths old-paths)
+        _ (println (count new) (count removed))
         _ (doseq [[id _] removed]
             (clear-dom (get doms id)))
         doms (apply dissoc (concat [doms] (map first removed)))
         doms (apply assoc (flatten [doms (map (fn [[id p]]
                                                 [id (update-dom p gmap nil)])
                                               new)]))]
-    (swap! state merge {:doms doms
-                        :paths paths})))
+    doms))
 
-(defn- update-new-path [{nodes :nodes :as path} editing state]
-  (let [{gmap :map old-path :path dom :dom} @state
-        {:keys [renderer marker info]} dom]
-    (when (and renderer marker info (empty? nodes))
-      (swap! state merge {:dom {:renderer (.setMap renderer nil)
-                                :marker (.setMap marker nil)}
-                          :path path}))
-    (when-not (or (empty? nodes) (= path old-path))
-      (swap! state merge {:dom (update-dom path gmap dom)
-                          :path path}))))
+(defn- update-new-path [{nodes :nodes :as path} old-path dom gmap]
+  (if (empty? nodes)
+    (clear-dom dom)
+    (if (= path old-path)
+      dom
+      (update-dom path gmap dom))))
 
-(defn google-map []
+(defn google-map-wrapper [paths editing new-path]
   (let [state (atom {})
-        paths (subscribe [:paths])
-        editing (subscribe [:is-new-path])
-        new-path (subscribe [:new-path])
-        did-update (fn [component old-argv]
-                     (update-paths @paths state)
-                     (update-new-path @new-path @editing state))]
-    (reagent/create-class {:reagent-render #(initial-render @paths @editing @new-path)
-                           :component-did-mount (fn [component]
-                                                  (on-mount state editing component)
-                                                  (did-update component []))
+        did-update (fn [component [_ old-paths last-edit]]
+                     (let [[_ paths editing new-path] (reagent/argv component)]
+                       (swap!
+                        state
+                        (fn [{gmap :map doms :doms dom :new-dom :as local}]
+                          (merge local
+                                 {:new-dom
+                                  (update-new-path new-path last-edit dom gmap)}
+                                 {:doms
+                                  (update-paths paths old-paths doms gmap)})))))
+        did-mount (fn [component]
+                    (swap! state assoc :map (build-map component)))]
+    (reagent/create-class {:reagent-render (fn []
+                                             [:div {:style {:height "600px"}}])
+                           :component-did-mount did-mount
                            :component-did-update did-update})))
 
-#_(defn google-map []
+(defn google-map []
   (let [paths (subscribe [:paths])
         editing (subscribe [:is-new-path])
         new-path (subscribe [:new-path])]

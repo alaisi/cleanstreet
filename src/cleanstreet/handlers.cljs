@@ -15,10 +15,9 @@
   (go
    (dispatch [:initialize-fb (<! (ma/deref< fb-conn))])))
 
-(defn- update-firebase! [db]
+(defn- update-firebase! [path]
   (go
-   (.debug js/console
-           (<! (ma/reset!< fb-conn (:maps db))))))
+   (<! (ma/reset-in!< fb-conn [:cleaned :paths (:id path)] path))))
 
 ;;; Google maps directions
 
@@ -43,20 +42,19 @@
                 "#ad7fa8" "#75507b" "#5c3566"
                 "#ef2929" "#cc0000" "#a40000"
                 "#eeeeec" "#d3d7cf" "#babdb6"
-                "#888a85" "#555753" "#"]]
-    {:id (str (random-uuid))
+                "#888a85" "#555753" ]]
+    {:id (keyword (str (random-uuid)))
      :color (rand-nth colors)
      :nodes []}))
 
 (def local-mw [(when ^boolean js/goog.DEBUG debug) trim-v])
-(def remote-mw (conj local-mw (after update-firebase!)))
 
 ;;; Handlers
 
 (register-handler
  :initialize-db
  (fn [_ _]
-   ;;(init-firebase!)
+   (init-firebase!)
    {:local {:editing false :path (build-new-path)}
     :maps {:cleaned {:paths {}}}}))
 
@@ -97,12 +95,14 @@
  :new-path-marker
  local-mw
  (fn [db [lat-lng]]
-   (let [nodes (conj (get-in db [:local :path :nodes]) lat-lng)]
-     (when (< 1 (count nodes))
-       (.route directions
-               (build-route-request nodes)
-               #(dispatch [:path-routed %1 %2])))
-     (assoc-in db [:local :path :nodes] nodes))))
+   (if-not (get-in db [:local :editing])
+     db
+     (let [nodes (conj (get-in db [:local :path :nodes]) lat-lng)]
+       (when (< 1 (count nodes))
+         (.route directions
+                 (build-route-request nodes)
+                 #(dispatch [:path-routed %1 %2])))
+       (assoc-in db [:local :path :nodes] nodes)))))
 
 (register-handler
  :path-routed
@@ -110,13 +110,15 @@
  (fn [db [route status]]
    (if-not (= status google.maps.DirectionsStatus.OK)
      (do (.warn js/console status route) db)
-     (assoc-in db [:local :path :route] (js/JSON.stringify route)))))
+     (assoc-in db [:local :path :route] (-> route
+                                            js/JSON.stringify
+                                            js/JSON.parse)))))
 
 (register-handler
  :add-path
- remote-mw
+ local-mw
  (fn [db [path]]
+   (update-firebase! path)
    (-> db
        (assoc-in [:maps :cleaned :paths (:id path)] path)
        (assoc :local {:editing false :path (build-new-path)}))))
-
