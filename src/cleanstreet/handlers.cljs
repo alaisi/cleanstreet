@@ -11,8 +11,12 @@
 
 (def fb-conn (m/connect "https://cleanstreet.firebaseio.com/" "default"))
 
+
 (defn- init-firebase! []
   (go
+   (<! (ma/auth< fb-conn
+                 "cleanstreetapp@example.com"
+                 "to8lvaiPCaxXtEWRH1jSJS5pLiVIKE+ldjGO2IpaM5HKF/PaPPJlnqWVpN2CwqiCHH50Gps+5zsI"))
    (dispatch [:initialize-fb (<! (ma/deref< fb-conn))])))
 
 (defn- update-firebase! [path]

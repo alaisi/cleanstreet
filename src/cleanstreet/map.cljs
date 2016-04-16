@@ -74,7 +74,7 @@
       dom
       (update-dom path gmap dom))))
 
-(defn- map-did-update [component [_ old-paths last-edit]]
+(defn- map-did-update [state component [_ old-paths last-edit]]
   (let [[_ paths editing new-path] (reagent/argv component)]
     (swap! state
            (fn [{gmap :map doms :doms dom :new-dom :as local}]
@@ -91,7 +91,7 @@
                            :component-did-mount (fn [component]
                                                   (swap! state assoc
                                                          :map (build-map component)))
-                           :component-did-update  map-did-update})))
+                           :component-did-update (partial map-did-update state)})))
 
 (defn google-map []
   (let [paths (subscribe [:paths])
