@@ -1,0 +1,89 @@
+body {
+    background: url("../image/bg.jpg") 50% 0 no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+#header {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    /*background-color: white;*/
+}
+h1 {
+    color: white;
+    font-size: 45px;
+    font-weight: bold;
+    font-family: "Serif";
+    text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.7), -1px -1px 0 rgba(127, 127, 127, 0.3), -1px 1px 0 rgba(127, 127, 127, 0.3), 1px -1px 0 rgba(127, 127, 127, 0.3);
+    text-transform: uppercase;
+    text-align: center;
+}
+h4 {
+    color: #555753;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: "Serif";
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7), -1px -1px 0 rgba(127, 127, 127, 0.3), -1px 1px 0 rgba(127, 127, 127, 0.3), 1px -1px 0 rgba(127, 127, 127, 0.3);
+    text-transform: uppercase;
+    text-align: center;
+}
+.main {
+    background-color: white;
+}
+.text {
+    font-family: "Serif";
+    padding-top: 15px;
+    text-align: center;
+    line-height: 2.2;
+    font-style: italic;
+}
+.ltext {
+    font-family: "Serif";
+    padding-top: 15px;
+    line-height: 2.2;
+    font-style: italic;
+}
+.map-wrapper {
+    padding-bottom: 15px;
+}
+footer {
+    margin-top: 30px;
+    margin-right: 0;
+    margin-left: 0;
+    background-color: #555753;
+}
+.fbtm {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    text-align: center;
+}
+.actions {
+    float: right;
+    padding-bottom: 20px;
+}
+.actions>button {
+    margin-left: 10px;
+}
+.floatbtn {
+    position: relative;
+    top: 85px;
+    display: block;
+    z-index: 999;
+    text-align: right;
+    padding-right: 30px;
+}
+.subt {
+    color: #555753;
+    font-size: 14px;
+    font-weight: bold;
+    font-family: "Serif";
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7), -1px -1px 0 rgba(127, 127, 127, 0.3), -1px 1px 0 rgba(127, 127, 127, 0.3), 1px -1px 0 rgba(127, 127, 127, 0.3);
+    text-transform: uppercase;
+}
+.spaced {
+    margin-top: 25px;
+}
+.bgw {
+    padding-top: 10px;
+    background-color: white;
+}
